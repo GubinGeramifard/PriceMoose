@@ -1,14 +1,12 @@
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
-
 class ApiConstants {
   // Android emulator reaches host machine via 10.0.2.2
   // iOS simulator and web use localhost
   // Physical device: replace with your machine's LAN IP (e.g. http://192.168.1.x:8000)
+  static const String _prodUrl = 'https://pricemoose-production.up.railway.app';
+
   static String get baseUrl {
-    if (kIsWeb) return 'http://localhost:8000';
-    if (!kIsWeb && Platform.isAndroid) return 'http://10.0.2.2:8000';
-    return 'http://localhost:8000'; // iOS simulator
+    // Use production API for all platforms
+    return _prodUrl;
   }
 
   static const double defaultRadiusKm = 25.0;
