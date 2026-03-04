@@ -1,5 +1,5 @@
-name: grocery_compare
-description: Canadian grocery price comparison app
+name: pricemoose
+description: PriceMoose – Compare grocery prices across Canadian chains
 publish_to: "none"
 version: 1.0.0+1
 

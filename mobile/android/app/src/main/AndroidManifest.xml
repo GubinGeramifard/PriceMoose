@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="ca.grocerycompare.app">
+    package="ca.pricemoose.app">
 
     <!-- Internet -->
     <uses-permission android:name="android.permission.INTERNET"/>
@@ -15,7 +15,7 @@
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/>
 
     <application
-        android:label="Price Check Canada"
+        android:label="PriceMoose"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">
