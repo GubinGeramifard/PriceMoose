@@ -10,6 +10,11 @@ class GroceryApi {
 
   GroceryApi(this._dio);
 
+  Future<List<Map<String, dynamic>>> getDeals({int limit = 20}) async {
+    final resp = await _dio.get('/products/deals', queryParameters: {'limit': limit});
+    return (resp.data as List).cast<Map<String, dynamic>>();
+  }
+
   Future<List<Product>> searchProducts(String query, {int limit = 20}) async {
     final resp = await _dio.get('/products/search', queryParameters: {'q': query, 'limit': limit});
     return (resp.data as List).map((e) => Product.fromJson(e as Map<String, dynamic>)).toList();

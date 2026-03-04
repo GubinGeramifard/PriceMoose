@@ -26,15 +26,16 @@ class StoreChip extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: selected ? color : color.withValues(alpha: 0.12),
+          color: selected ? color : Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color, width: 1.5),
+          border: Border.all(color: selected ? color : Colors.white, width: 1.5),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 4, offset: const Offset(0, 1))],
         ),
         child: Text(
           label,
           style: TextStyle(
             color: selected ? Colors.white : color,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
             fontSize: 13,
           ),
         ),

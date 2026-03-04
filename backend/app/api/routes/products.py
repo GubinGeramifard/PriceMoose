@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from typing import Optional
 
 from app.database import get_db
-from app.models import Product
+from app.models import Product, Price, Store
 from app.scrapers import ALL_SCRAPERS
 
 router = APIRouter()
@@ -23,6 +23,62 @@ class ProductOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class DealOut(BaseModel):
+    upc: str
+    name: str
+    brand: Optional[str]
+    image_url: Optional[str]
+    chain: str
+    banner: Optional[str]
+    store_name: str
+    sale_price_cents: int
+    regular_price_cents: int
+    sale_price_display: str
+    regular_price_display: str
+    savings_pct: int
+
+
+@router.get("/deals", response_model=list[DealOut])
+async def get_deals(
+    limit: int = Query(20, le=50),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return products currently on sale, sorted by biggest % savings."""
+    stmt = (
+        select(Product, Price, Store)
+        .join(Price, Price.product_id == Product.id)
+        .join(Store, Price.store_id == Store.id)
+        .where(Price.on_sale == True)
+        .where(Price.sale_price_cents != None)
+        .where(Price.sale_price_cents < Price.price_cents)
+        .order_by(Price.scraped_at.desc())
+        .limit(limit * 3)  # over-fetch so we can sort by savings
+    )
+    result = await db.execute(stmt)
+    rows = result.all()
+
+    output: list[DealOut] = []
+    for product, price, store in rows:
+        savings_pct = int((1 - price.sale_price_cents / price.price_cents) * 100)
+        output.append(DealOut(
+            upc=product.upc,
+            name=product.name,
+            brand=product.brand,
+            image_url=product.image_url,
+            chain=store.chain,
+            banner=store.banner,
+            store_name=store.name,
+            sale_price_cents=price.sale_price_cents,
+            regular_price_cents=price.price_cents,
+            sale_price_display=f"${price.sale_price_cents / 100:.2f}",
+            regular_price_display=f"${price.price_cents / 100:.2f}",
+            savings_pct=savings_pct,
+        ))
+
+    output.sort(key=lambda d: d.savings_pct, reverse=True)
+    return output[:limit]
 
 
 @router.get("/search", response_model=list[ProductOut])
