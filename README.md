@@ -1,55 +1,20 @@
-# Price Check Canada
+# 🫎 PriceMoose
 
-A Flutter app for comparing grocery prices across major Canadian retailers:
-**Loblaws · Walmart Canada · Sobeys · Metro**
+**Compare grocery prices across Canada's major chains — in real time.**
 
-## Architecture
-
-```
-backend/     — Python FastAPI + PostgreSQL + Celery scrapers
-mobile/      — Flutter app (iOS & Android)
-```
+PriceMoose is a Flutter mobile app backed by a Python scraping engine that pulls live pricing from Loblaws, Walmart Canada, Sobeys, and Metro. Search by product name or scan a barcode to instantly see where it's cheapest near you.
 
 ---
 
-## Quick Start
+## Screenshots
 
-### Backend
+| Search | Price Comparison | Shopping List |
+|--------|-----------------|---------------|
+| ![Search](screenshots/search.png) | ![Prices](screenshots/prices.png) | ![List](screenshots/list.png) |
 
-**Requirements**: Docker + Docker Compose
-
-```bash
-cd backend
-docker compose up --build
-```
-
-API available at `http://localhost:8000`
-Swagger docs at `http://localhost:8000/docs`
-
-Health check: `curl http://localhost:8000/health`
-
-**Run scrapers manually** (first-time seed):
-```bash
-docker compose exec worker python -c "
-from app.tasks.scrape_tasks import _scrape_chain
-import asyncio
-asyncio.run(_scrape_chain('loblaws'))
-"
-```
-
-### Flutter App
-
-**Requirements**: Flutter 3.22+ with Dart 3.3+
-
-```bash
-cd mobile
-flutter pub get
-flutter pub run build_runner build --delete-conflicting-outputs   # generate freezed/retrofit files
-flutter run   # iOS simulator or Android emulator
-```
-
-> For device testing: update `lib/core/constants.dart` → `ApiConstants.baseUrl`
-> to your machine's LAN IP (e.g. `http://192.168.1.100:8000`)
+| Basket Compare | Nearby Stores | Settings |
+|----------------|---------------|----------|
+| ![Compare](screenshots/compare.png) | ![Map](screenshots/map.png) | ![Settings](screenshots/settings.png) |
 
 ---
 
@@ -57,62 +22,95 @@ flutter run   # iOS simulator or Android emulator
 
 | Feature | Description |
 |---------|-------------|
-| Barcode Scan | Scan any grocery barcode → instant price comparison across nearby stores |
-| Search | Full-text product search with debounced results |
-| Price Ranking | Prices sorted cheapest-first with distance and sale badges |
+| Barcode Scan | Scan any grocery barcode → instant price comparison |
+| Product Search | Debounced full-text search across 800+ products |
+| Price Ranking | Prices sorted cheapest-first with distance + sale badges |
 | Shopping List | Build a cart, set quantities, persisted locally |
 | Basket Compare | See total cost of your whole list at each nearby store |
-| Store Map | OpenStreetMap view of all nearby stores with chain colour coding |
+| Nearby Stores | OpenStreetMap view with chain colour-coded markers |
+| Postal Code | Set your location by Canadian postal code |
+
+---
 
 ## Supported Chains
 
-| Chain | Banners | Data Source |
-|-------|---------|-------------|
-| Loblaws | Loblaws, No Frills, RCSS, Zehrs, Fortinos | PC Express API |
-| Walmart | Walmart Canada | grocery.walmart.ca GraphQL |
-| Sobeys | Sobeys, FreshCo, Safeway, IGA | sobeys.com API |
-| Metro | Metro, Food Basics | metro.ca API |
+| Chain | Banners |
+|-------|---------|
+| Loblaws | Loblaws, No Frills, Real Canadian Superstore, Zehrs, Fortinos |
+| Walmart | Walmart Canada |
+| Sobeys | Sobeys, FreshCo, Safeway Canada, IGA |
+| Metro | Metro, Food Basics |
 
-## Scraping Schedule
+---
 
-Prices are refreshed every 6 hours via Celery beat:
-- 00:00 / 06:00 / 12:00 / 18:00 — Loblaws
-- 00:15 / 06:15 / 12:15 / 18:15 — Walmart
-- 00:30 / 06:30 / 12:30 / 18:30 — Sobeys
-- 00:45 / 06:45 / 12:45 / 18:45 — Metro
+## Tech Stack
+
+**Mobile** — Flutter 3.22 · Riverpod · go_router · flutter_map · Hive · mobile_scanner
+
+**Backend** — Python 3.12 · FastAPI · SQLAlchemy (async) · PostgreSQL · httpx · BeautifulSoup4
+
+---
+
+## Project Structure
+
+```
+pricemoose/
+├── mobile/                  Flutter app
+│   └── lib/
+│       ├── app/             Router + app root
+│       ├── core/            API client, theme, constants, postal lookup
+│       ├── shared/          Freezed models + reusable widgets
+│       └── features/        search/ barcode/ product_detail/
+│                            shopping_list/ stores/ settings/
+│
+└── backend/
+    └── app/
+        ├── main.py          FastAPI entry point
+        ├── models/          SQLAlchemy ORM (Product, Store, Price)
+        ├── api/routes/      REST endpoints
+        └── scrapers/        One scraper per chain + base class
+```
+
+---
 
 ## API Reference
 
 | Endpoint | Description |
 |----------|-------------|
-| `GET /products/search?q=&limit=` | Search products by name |
-| `GET /products/upc/{upc}` | Look up by barcode (auto-seeds from scrapers) |
+| `GET /products/search?q=` | Full-text product search |
+| `GET /products/upc/{upc}` | Look up product by barcode |
 | `GET /prices/{upc}?lat=&lng=&radius_km=` | Prices sorted cheapest first |
-| `GET /stores/nearby?lat=&lng=&radius_km=&chain=` | Stores near a location |
-| `POST /lists/compare` | Compare basket cost across stores |
+| `GET /stores/nearby?lat=&lng=&chain=` | Stores near a location |
+| `POST /lists/compare` | Compare basket total across stores |
 
-## Project Structure
+---
 
+## Running Locally
+
+### Backend
+
+```bash
+cd backend
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload       # http://localhost:8000
+python scrape_tier1.py              # seed initial data
 ```
-backend/app/
-├── main.py              FastAPI app
-├── config.py            Environment settings
-├── database.py          SQLAlchemy async engine
-├── models/              ORM models (Product, Store, Price)
-├── api/routes/          FastAPI route handlers
-├── scrapers/            One file per chain + base class
-└── tasks/               Celery app + scheduled scrape tasks
 
-mobile/lib/
-├── main.dart
-├── app/                 App root + go_router config
-├── core/                API client, theme, constants
-├── shared/              Freezed models + reusable widgets
-└── features/            search/ barcode/ product_detail/ shopping_list/ stores/
+### Flutter (web / Android)
+
+```bash
+cd mobile
+flutter pub get
+flutter run -d chrome --web-port 3000
 ```
+
+> For Android: update `lib/core/constants.dart` → `ApiConstants.baseUrl` to your LAN IP.
+
+---
 
 ## Legal Note
 
-This app uses unofficial APIs to retrieve publicly available pricing information.
-Always review a retailer's Terms of Service before scraping. Consider rate-limiting
-scrapers and caching aggressively to minimize load on retailer infrastructure.
+PriceMoose retrieves publicly available pricing from retailer websites.
+All prices are for informational purposes only. Scraping is rate-limited
+and cached to minimize impact on retailer infrastructure.
